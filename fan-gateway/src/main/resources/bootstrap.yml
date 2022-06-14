@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: fan-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 159.75.245.201:32767
+        register-enabled: true
+      config:
+        server-addr: 159.75.245.201:32767 #nacos的serverAdd配置
+        group: NAOCS-SPRING-CLOUD-GATEWAY #分组的配置
+        file-extension: json
+        data-id: spring-cloud-gateway.json #data-id的配置
+    gateway:
+      #discovery:
+      #  locator:
+      #    enabled: true #开启从注册中心动态创建路由的功能
+      #    lower-case-service-id: true #使用小写服务名，默认是大写
+      routes: #配置路由规则
+        - id: oauth2-auth-route
+          uri: lb://micro-oauth2-auth
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1

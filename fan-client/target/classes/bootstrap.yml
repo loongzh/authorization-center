@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: fan-client
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 159.75.245.201:32767
+        register-enabled: true
+      config:
+        server-addr: 159.75.245.201:32767 #nacos的serverAdd配置
+        group: NAOCS-SPRING-CLOUD-Client #分组的配置

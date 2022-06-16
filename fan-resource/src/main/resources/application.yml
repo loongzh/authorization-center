@@ -3,11 +3,6 @@ server:
 spring:
   profiles:
     active: dev
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://127.0.0.1:10301
 management:
   endpoints:
     web:

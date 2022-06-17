@@ -1,4 +1,4 @@
-package io.githubs.loongzh;
+package io.githubs.loongzh.auth;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

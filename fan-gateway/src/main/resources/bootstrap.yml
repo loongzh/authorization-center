@@ -18,7 +18,7 @@ spring:
       #    lower-case-service-id: true #使用小写服务名，默认是大写
       routes: #配置路由规则
         - id: oauth2-auth-route
-          uri: lb://micro-oauth2-auth
+          uri: lb://fan-auth
           predicates:
             - Path=/auth/**
           filters:

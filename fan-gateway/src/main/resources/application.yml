@@ -1,13 +1,29 @@
 server:
   port: 10201
 spring:
+  main:
+    #springcloudgateway 的内部是通过 netty+webflux 实现的
+    #webflux 实现和 spring-boot-starter-web 依赖冲突
+    web-application-type: reactive
   profiles:
     active: dev
+  redis:
+    port: 54326
+    host: 106.52.64.158
+    password: Abc123456
+    database: 3
   security:
     oauth2:
+      client:
+        client-secret: 123
+        client-id: javaboy
+        user-authorization-uri: http://localhost:10301/oauth/authorize
+        access-token-uri: http://localhost:10301/oauth/token
+        user-info-uri: http://localhost:10301/user
       resourceserver:
         jwt:
-          issuer-uri: http://127.0.0.1:10301
+          #配置RSA的公钥访问地址
+          jwk-set-uri: 'http://localhost:10301/rsa/publicKey'
 management:
   endpoints:
     web:

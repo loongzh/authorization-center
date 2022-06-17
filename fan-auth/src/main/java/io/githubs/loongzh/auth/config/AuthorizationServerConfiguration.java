@@ -12,7 +12,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -47,29 +49,36 @@ public class AuthorizationServerConfiguration {
      * @return the security filter chain
      * @throws Exception the exception
      */
+//    @Bean
+//    @Order(Ordered.HIGHEST_PRECEDENCE)
+//    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+//        OAuth2AuthorizationServerConfigurer<HttpSecurity> authorizationServerConfigurer =
+//                new OAuth2AuthorizationServerConfigurer<>();
+//        // TODO 你可以根据需求对authorizationServerConfigurer进行一些个性化配置
+//        RequestMatcher authorizationServerEndpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
+//
+//        // 拦截 授权服务器相关的请求端点
+//        http.requestMatcher(authorizationServerEndpointsMatcher)
+//                .authorizeRequests().anyRequest().authenticated()
+//                .and()
+//                // 忽略掉相关端点的csrf
+//                .csrf(csrf -> csrf
+//                        .ignoringRequestMatchers(authorizationServerEndpointsMatcher))
+//                // 开启form登录
+//                .formLogin()
+//                .and()
+//                // 应用 授权服务器的配置
+//                .apply(authorizationServerConfigurer);
+//        return http.build();
+//    }
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
-        OAuth2AuthorizationServerConfigurer<HttpSecurity> authorizationServerConfigurer =
-                new OAuth2AuthorizationServerConfigurer<>();
-        // TODO 你可以根据需求对authorizationServerConfigurer进行一些个性化配置
-        RequestMatcher authorizationServerEndpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
 
-        // 拦截 授权服务器相关的请求端点
-        http.requestMatcher(authorizationServerEndpointsMatcher)
-                .authorizeRequests().anyRequest().authenticated()
-                .and()
-                // 忽略掉相关端点的csrf
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers(authorizationServerEndpointsMatcher))
-                // 开启form登录
-                .formLogin()
-                .and()
-                // 应用 授权服务器的配置
-                .apply(authorizationServerConfigurer);
-        return http.build();
+        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+
+        return http.formLogin(Customizer.withDefaults()).build();
     }
-
 
     /**
      * 注册一个客户端应用

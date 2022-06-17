@@ -42,7 +42,9 @@ public class DefaultSecurityConfig {
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeRequests(authorizeRequests ->
-                        authorizeRequests.antMatchers("/oauth2/user")
+                        authorizeRequests
+                                .antMatchers("/login", "/login-error").permitAll()
+                                .antMatchers("/oauth2/user")
                                 .hasAnyAuthority("SCOPE_userinfo")
                                 .anyRequest().authenticated()
                 )
@@ -53,8 +55,8 @@ public class DefaultSecurityConfig {
     }
     // @formatter:on
 
-
-    //    SecurityFilterChain configureSecurityFilterChain(HttpSecurity http) throws Exception {
+//        @Bean
+//        SecurityFilterChain configureSecurityFilterChain(HttpSecurity http) throws Exception {
 //        http
 //                .authorizeHttpRequests(authorizeRequests -> authorizeRequests.anyRequest().authenticated())
 //                .formLogin()

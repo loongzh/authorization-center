@@ -26,28 +26,12 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 
 /**
  * @author felord.cn
  */
 @EnableWebSecurity
-public class DefaultSecurityConfig {
-    // @formatter:off
-//    @Bean
-//    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-//        http.authorizeRequests(authorizeRequests ->
-//                        authorizeRequests
-//                                .antMatchers("/oauth2/user")
-//                                .hasAnyAuthority("SCOPE_userinfo")
-//                                .anyRequest().authenticated()
-//                )
-//                .formLogin(withDefaults());;
-//        return http.build();
-//    }
-    // @formatter:on
-
+public class DefaultSecurityConfig  {
     @Bean
     SecurityFilterChain configureSecurityFilterChain(HttpSecurity http) throws Exception {
         http.formLogin(form ->

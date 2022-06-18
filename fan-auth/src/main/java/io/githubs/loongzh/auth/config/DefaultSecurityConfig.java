@@ -56,8 +56,10 @@ public class DefaultSecurityConfig {
                 )
                 .authorizeRequests(requests ->
                         requests.antMatchers("/login").permitAll()
+                                .antMatchers("/oauth2/user").hasAnyAuthority("SCOPE_userinfo")
+                                .antMatchers("/resource/hello").hasAnyAuthority("SCOPE_userinfo")
                                 .anyRequest().authenticated()
-                );
+                ).oauth2ResourceServer().jwt();
     return http.build();
     }
     /**
@@ -88,6 +90,7 @@ public class DefaultSecurityConfig {
     WebSecurityCustomizer webSecurityCustomizer() {
         return web -> web.ignoring()
                 .antMatchers("/actuator/health")
+                .antMatchers("/rsa/publicKey")
                 .antMatchers("/css/**")
                 .antMatchers("/js/**")
                 .antMatchers("/images/**");

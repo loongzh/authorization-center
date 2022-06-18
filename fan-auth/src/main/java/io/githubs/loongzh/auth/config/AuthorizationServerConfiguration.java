@@ -12,8 +12,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -31,11 +33,13 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
 import org.springframework.security.oauth2.server.authorization.config.TokenSettings;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateFactory;
 import java.util.UUID;
 
 /**
@@ -43,31 +47,29 @@ import java.util.UUID;
  */
 @Configuration(proxyBeanMethods = false)
 public class AuthorizationServerConfiguration {
-
+    private static final String CUSTOM_CONSENT_PAGE_URI = "/oauth2/consent";
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
-//        OAuth2AuthorizationServerConfigurer<HttpSecurity> authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer<>();
-//        RequestMatcher authorizationServerEndpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
-//
-//        //添加自定义授权页面
-//        authorizationServerConfigurer.authorizationEndpoint(endpoint -> {
-//            endpoint.consentPage("/oauth2/consent");
-//        });
-//
-//        // 拦截 授权服务器相关的请求端点
-//        http.requestMatcher(authorizationServerEndpointsMatcher)
-//                .authorizeRequests().anyRequest().authenticated().and()
-//                // 忽略掉相关端点的csrf
-//                .csrf(csrf -> csrf.ignoringRequestMatchers(authorizationServerEndpointsMatcher))
-//                // 应用 授权服务器的配置
-//                .apply(authorizationServerConfigurer);
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+        OAuth2AuthorizationServerConfigurer<HttpSecurity> authorizationServerConfigurer =
+                new OAuth2AuthorizationServerConfigurer<>();
+        authorizationServerConfigurer
+                .authorizationEndpoint(authorizationEndpoint ->
+                        authorizationEndpoint.consentPage(CUSTOM_CONSENT_PAGE_URI));
+
+        RequestMatcher endpointsMatcher = authorizationServerConfigurer
+                .getEndpointsMatcher();
+
         http
-                .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
-                .exceptionHandling((exceptions) -> exceptions
-                        .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
-                );
+                .requestMatcher(endpointsMatcher)
+                .authorizeRequests(authorizeRequests ->
+                        authorizeRequests.anyRequest().authenticated()
+                )
+                .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
+                .exceptionHandling(exceptions ->
+                        exceptions.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
+                )
+                .apply(authorizationServerConfigurer);
         return http.build();
     }
 
@@ -164,7 +166,6 @@ public class AuthorizationServerConfiguration {
     @SneakyThrows
     @Bean
     JwtDecoder jwtDecoder() {
-        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
         return NimbusJwtDecoder.withPublicKey(KeyConfig.getVerifierKey()).build();
     }
     /**

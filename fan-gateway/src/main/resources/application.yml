@@ -14,16 +14,19 @@ spring:
     database: 3
   security:
     oauth2:
-      client:
-        client-secret: 123
-        client-id: javaboy
-        user-authorization-uri: http://localhost:10301/oauth/authorize
-        access-token-uri: http://localhost:10301/oauth/token
-        user-info-uri: http://localhost:10301/user
       resourceserver:
         jwt:
           #配置RSA的公钥访问地址
-          jwk-set-uri: 'http://localhost:10301/rsa/publicKey'
+          #jwk-set-uri: 'http://localhost:10301/rsa/publicKey'
+          issuer-uri: http://localhost:10301
+secure:
+  ignore:
+    #配置白名单路径
+    urls:
+      - "/actuator/**"
+      - "/oauth2/token"
+      - "/oauth2/authorize"
+      - "/login"
 management:
   endpoints:
     web:

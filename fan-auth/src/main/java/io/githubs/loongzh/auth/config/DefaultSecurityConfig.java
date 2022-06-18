@@ -15,8 +15,6 @@
  */
 package io.githubs.loongzh.auth.config;
 
-import io.githubs.loongzh.auth.config.token.KeyConfig;
-import lombok.SneakyThrows;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -25,12 +23,10 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.security.cert.CertificateFactory;
+import static org.springframework.security.config.Customizer.withDefaults;
 
 
 /**
@@ -39,34 +35,31 @@ import java.security.cert.CertificateFactory;
 @EnableWebSecurity
 public class DefaultSecurityConfig {
     // @formatter:off
-    @Bean
-    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeRequests(authorizeRequests ->
-                        authorizeRequests
-                                .antMatchers("/login", "/login-error").permitAll()
-                                .antMatchers("/oauth2/user")
-                                .hasAnyAuthority("SCOPE_userinfo")
-                                .anyRequest().authenticated()
-                )
-                .formLogin()
-                .and()
-                .oauth2ResourceServer().jwt();
-        return http.build();
-    }
-    // @formatter:on
-
-//        @Bean
-//        SecurityFilterChain configureSecurityFilterChain(HttpSecurity http) throws Exception {
-//        http
-//                .authorizeHttpRequests(authorizeRequests -> authorizeRequests.anyRequest().authenticated())
-//                .formLogin()
-//                .loginPage("/login.html")
-//                .loginProcessingUrl("/login")
-//                .permitAll()
-//                .and()
-//                .csrf().disable();
+//    @Bean
+//    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+//        http.authorizeRequests(authorizeRequests ->
+//                        authorizeRequests
+//                                .antMatchers("/oauth2/user")
+//                                .hasAnyAuthority("SCOPE_userinfo")
+//                                .anyRequest().authenticated()
+//                )
+//                .formLogin(withDefaults());;
 //        return http.build();
 //    }
+    // @formatter:on
+
+    @Bean
+    SecurityFilterChain configureSecurityFilterChain(HttpSecurity http) throws Exception {
+        http.formLogin(form ->
+                        form.loginPage("/login")
+                                .loginProcessingUrl("/login")
+                )
+                .authorizeRequests(requests ->
+                        requests.antMatchers("/login").permitAll()
+                                .anyRequest().authenticated()
+                );
+    return http.build();
+    }
     /**
      * Users user details service.
      *
@@ -85,12 +78,7 @@ public class DefaultSecurityConfig {
     }
     // @formatter:on
 
-    @SneakyThrows
-    @Bean
-    JwtDecoder jwtDecoder() {
-        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-        return NimbusJwtDecoder.withPublicKey(KeyConfig.getVerifierKey()).build();
-    }
+
     /**
      * Web security customizer web security customizer.
      *

@@ -1,1 +1,5 @@
+#
 http://127.0.0.1:10301/oauth2/authorize?response_type=code&client_id=felord&redirect_uri=http://127.0.0.1:8082/authorized&scope=userinfo
+#OCID
+http://localhost:10301/oauth2/authorize?response_type=code&client_id=felord&scope=openid&state=state&redirect_uri=http://127.0.0.1:8082/authorized&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256
+http://localhost:9000/oauth2/token?grant_type=authorization_code&client_id=felord&redirect_uri=http://127.0.0.1:8080/authorized&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk&code=xxxx

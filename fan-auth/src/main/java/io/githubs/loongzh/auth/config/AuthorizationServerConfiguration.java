@@ -4,7 +4,9 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import io.githubs.loongzh.auth.config.token.KeyConfig;
+import io.githubs.loongzh.auth.config.handler.oidc.DefaultOidcTokenCustomer;
+import io.githubs.loongzh.auth.config.handler.oidc.DefaultOidcUserInfoMapper;
+import io.githubs.loongzh.auth.utils.KeyConfig;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -12,8 +14,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -30,11 +34,12 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
 import org.springframework.security.oauth2.server.authorization.config.TokenSettings;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 /**
@@ -42,28 +47,52 @@ import java.util.UUID;
  */
 @Configuration(proxyBeanMethods = false)
 public class AuthorizationServerConfiguration {
+    @Value("${server.port}") Integer port;
     private static final String CUSTOM_CONSENT_PAGE_URI = "/oauth2/consent";
+    private DefaultOidcUserInfoMapper.OidcUserInfoMapperExtend oidcUserInfoMapperExtend;
+    private DefaultOidcTokenCustomer.AbstractOidcTokenCustomerExtend oidcTokenCustomerExtend;
+
+    public AuthorizationServerConfiguration(DefaultOidcUserInfoMapper.OidcUserInfoMapperExtend oidcUserInfoMapperExtend, DefaultOidcTokenCustomer.AbstractOidcTokenCustomerExtend oidcTokenCustomerExtend) {
+        this.oidcUserInfoMapperExtend = oidcUserInfoMapperExtend;
+        this.oidcTokenCustomerExtend = oidcTokenCustomerExtend;
+    }
+
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,RegisteredClientRepository registeredClientRepository,
+                                                                      OAuth2AuthorizationService authorizationService) throws Exception {
         OAuth2AuthorizationServerConfigurer<HttpSecurity> authorizationServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer<>();
+        //设置确认界面uri
         authorizationServerConfigurer
                 .authorizationEndpoint(authorizationEndpoint ->
                         authorizationEndpoint.consentPage(CUSTOM_CONSENT_PAGE_URI));
+        //OIDC相关设置
+        authorizationServerConfigurer
+        .oidc(oidc ->
+                oidc .clientRegistrationEndpoint(Customizer.withDefaults())
+                        .userInfoEndpoint(userInfoEndpoint ->
+                                new DefaultOidcUserInfoMapper(this.oidcUserInfoMapperExtend)
 
+                )
+        );
         RequestMatcher endpointsMatcher = authorizationServerConfigurer
                 .getEndpointsMatcher();
 
         http
+                //仅拦截OAuth2 Authorization Server的相关endpoint
                 .requestMatcher(endpointsMatcher)
+                //开启请求认证
                 .authorizeRequests(authorizeRequests ->
                         authorizeRequests.anyRequest().authenticated()
                 )
+                //禁用OAuth2 Server相关endpoint的CSRF防御
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 .exceptionHandling(exceptions ->
                         exceptions.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
                 )
+                //需开启OAuth2 Resource Server支持OIDC /userinfo 的Bearer accessToken鉴权（否则401）
+                .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
                 .apply(authorizationServerConfigurer);
         return http.build();
     }
@@ -103,7 +132,10 @@ public class AuthorizationServerConfiguration {
 //                名称 可不定义
                 .clientName("felord")
 //                授权方法
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .clientAuthenticationMethods(clientAuthenticationMethods -> {
+                    clientAuthenticationMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
+                    clientAuthenticationMethods.add(ClientAuthenticationMethod.NONE);
+                })
 //                授权类型 PASSWORD OAUTH2.1中已移除
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
@@ -158,6 +190,15 @@ public class AuthorizationServerConfiguration {
         return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate,
                 registeredClientRepository);
     }
+    /**
+     * 自定义JWT编码上下文<br/>
+     * 填充jwt.claims.sid为当前OP sessionId
+     */
+    @Bean
+    public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomer() {
+        return new DefaultOidcTokenCustomer(this.oidcTokenCustomerExtend);
+    }
+
     @SneakyThrows
     @Bean
     JwtDecoder jwtDecoder() {
@@ -175,7 +216,7 @@ public class AuthorizationServerConfiguration {
         JWKSet jwkSet = new JWKSet(rsaKey);
         return (jwkSelector, securityContext) -> jwkSelector.select(jwkSet);
     }
-    private static RSAKey generateRsa() throws NoSuchAlgorithmException {
+    private static RSAKey generateRsa(){
         return new RSAKey.Builder(KeyConfig.getVerifierKey())
                 .privateKey(KeyConfig.getSingerKey())
                 .keyID(UUID.randomUUID().toString())
@@ -187,7 +228,7 @@ public class AuthorizationServerConfiguration {
      * @return the provider settings
      */
     @Bean
-    public ProviderSettings providerSettings(@Value("${server.port}") Integer port) {
+    public ProviderSettings providerSettings() {
         //TODO 生产应该使用域名
         return ProviderSettings.builder().issuer("http://localhost:" + port).build();
     }

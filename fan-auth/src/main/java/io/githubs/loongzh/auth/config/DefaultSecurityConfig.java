@@ -23,6 +23,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -43,7 +44,7 @@ public class DefaultSecurityConfig  {
                                 .antMatchers("/oauth2/user").hasAnyAuthority("SCOPE_userinfo")
                                 .antMatchers("/resource/hello").hasAnyAuthority("SCOPE_userinfo")
                                 .anyRequest().authenticated()
-                ).oauth2ResourceServer().jwt();
+                );
     return http.build();
     }
     /**
@@ -78,5 +79,12 @@ public class DefaultSecurityConfig  {
                 .antMatchers("/css/**")
                 .antMatchers("/js/**")
                 .antMatchers("/images/**");
+    }
+    /**
+     * 设置密码解析器
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return  PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 }

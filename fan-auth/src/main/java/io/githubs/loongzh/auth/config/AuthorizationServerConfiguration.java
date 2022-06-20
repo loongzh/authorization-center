@@ -4,9 +4,12 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.openid.connect.sdk.OIDCScopeValue;
 import io.githubs.loongzh.auth.config.handler.oidc.DefaultOidcTokenCustomer;
 import io.githubs.loongzh.auth.config.handler.oidc.DefaultOidcUserInfoMapper;
+import io.githubs.loongzh.auth.constant.Oauth2Constants;
 import io.githubs.loongzh.auth.utils.KeyConfig;
+import io.githubs.loongzh.auth.utils.ObjectPostProcessorUtils;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
@@ -22,24 +26,38 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider;
+import org.springframework.security.oauth2.server.authorization.authentication.JwtClientAssertionAuthenticationProvider;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeAuthenticationProvider;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
 import org.springframework.security.oauth2.server.authorization.config.TokenSettings;
+import org.springframework.security.oauth2.server.authorization.oidc.web.OidcProviderConfigurationEndpointFilter;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.web.OAuth2ClientAuthenticationFilter;
+import org.springframework.security.oauth2.server.authorization.web.authentication.*;
+import org.springframework.security.oauth2.server.authorizationauthorization.authentication.OAuth2CustomAuthorizationCodeAuthenticationProvider;
+import org.springframework.security.oauth2.server.authorizationauthorization.authentication.OAuth2CustomClientAuthenticationProvider;
+import org.springframework.security.oauth2.server.authorizationauthorization.web.authentication.PublicClientRefreshTokenAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.UUID;
 
 /**
@@ -75,7 +93,32 @@ public class AuthorizationServerConfiguration {
                                 new DefaultOidcUserInfoMapper(this.oidcUserInfoMapperExtend)
 
                 )
-        );
+        )
+        //扩展Oauth2 client认证 参数转换器 - 支持RefreshToken无需client_secret认证
+        .withObjectPostProcessor(ObjectPostProcessorUtils.objectPostAppendHandle(
+        OncePerRequestFilter.class,
+        OAuth2ClientAuthenticationFilter.class,
+        oAuth2ClientAuthenticationFilter -> {
+            //扩展Oauth2 client认证 参数转换器request -> OAuth2ClientAuthenticationToken
+            oAuth2ClientAuthenticationFilter.setAuthenticationConverter(new DelegatingAuthenticationConverter(
+                    Arrays.asList(
+                            new JwtClientAssertionAuthenticationConverter(),
+                            new ClientSecretBasicAuthenticationConverter(),
+                            new ClientSecretPostAuthenticationConverter(),
+                            /** 添加自定义RefreshToken请求解析器（支持不提供client_secret刷新token） */
+                            new PublicClientRefreshTokenAuthenticationConverter(),
+                            new PublicClientAuthenticationConverter())));
+        }))
+        //扩展OAuth2 Token端点 客户端认证逻辑 - 支持refresh_token不提供client_secret认证（支持PKCE code模式）
+        .withObjectPostProcessor(ObjectPostProcessorUtils.objectPostReturnNewObj(
+                AuthenticationProvider.class,
+                JwtClientAssertionAuthenticationProvider.class,
+                new OAuth2CustomClientAuthenticationProvider(registeredClientRepository, authorizationService)))
+        //扩展OAuth2 Token端点 - 支持在PKCE模式下也生成refresh_token
+        .withObjectPostProcessor(ObjectPostProcessorUtils.objectPostConvertObj(
+                AuthenticationProvider.class,
+                OAuth2AuthorizationCodeAuthenticationProvider.class,
+                oAuth2AuthorizationCodeAuthenticationProvider -> new OAuth2CustomAuthorizationCodeAuthenticationProvider(authorizationService, http.getSharedObject(JwtEncoder.class))));
         RequestMatcher endpointsMatcher = authorizationServerConfigurer
                 .getEndpointsMatcher();
 
@@ -148,7 +191,11 @@ public class AuthorizationServerConfiguration {
                 .redirectUri("https://baidu.com")
 //                OIDC支持
                 .scope(OidcScopes.OPENID)
-//                其它Scope
+                .scope(OidcScopes.PHONE)
+                .scope(OidcScopes.EMAIL)
+                .scope(OidcScopes.PROFILE)
+                //支持PKCE模式下（无client_secret）获取refresh_token
+                .scope(OIDCScopeValue.OFFLINE_ACCESS.getValue())
                 .scope("message.read")
                 .scope("userinfo")
                 .scope("message.write")
@@ -156,7 +203,26 @@ public class AuthorizationServerConfiguration {
                 .tokenSettings(TokenSettings.builder().build())
 //                配置客户端相关的配置项，包括验证密钥或者 是否需要授权页面
                 .clientSettings(ClientSettings.builder()
-                        .requireAuthorizationConsent(true).build())
+                        .requireAuthorizationConsent(true)
+                        //.requireProofKey(true)
+                        .build())
+                .tokenSettings(TokenSettings.builder()
+                        //accessToken生存时长（即超过多久失效，默认5分钟）
+                        .accessTokenTimeToLive(Duration.ofMinutes(5))
+                        //refreshToken生存时长（即超过多久失效，默认60分钟）
+                        .refreshTokenTimeToLive(Duration.ofMinutes(60))
+                        //执行刷新token流程时，是否返回新的refreshToken（默认true即重用refreshToken），
+                        //true则重用之前的refreshToken，false则生成新的refreshToken及生存时长
+                        .reuseRefreshTokens(false)
+                        //设置idToken签名算法 TODO 参见 OidcClientRegistrationEndpointFilter 逻辑
+                        .idTokenSignatureAlgorithm(SignatureAlgorithm.RS256)
+                        //支持PKCE模式下（无client_secret）执行refresh_token流程
+                        .setting(Oauth2Constants.TOKEN_SETTINGS.ALLOW_PUBLIC_CLIENT_REFRESH_TOKEN, true)
+                        //注：idToken默认生存时长30分钟，目前不可配置，参见：JwtUtils.idTokenClaims方法
+                        //注：code有效时长5分钟，目前不可配置，参见：OAuth2AuthorizationCodeRequestAuthenticationProvider.generateAuthorizationCode
+                        //注：session时长 > refreshToken刷新时长
+                        //TODO 注：session时长  remember-me时长
+                        .build())
                 .build();
     }
 

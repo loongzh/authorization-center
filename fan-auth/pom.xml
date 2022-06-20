@@ -18,6 +18,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <nimbus.oidc.sdk.version>9.27</nimbus.oidc.sdk.version>
+        <kaptcha.version>2.3.2</kaptcha.version>
     </properties>
 
     <dependencies>
@@ -43,6 +45,11 @@
             <groupId>io.springboot.security</groupId>
             <artifactId>spring-security-oauth2-authorization-server</artifactId>
             <version>0.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>oauth2-oidc-sdk</artifactId>
+            <version>${nimbus.oidc.sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -73,7 +80,12 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
         </dependency>
-
+        <!-- 验证码工具依赖 -->
+        <dependency>
+            <groupId>com.github.penggle</groupId>
+            <artifactId>kaptcha</artifactId>
+            <version>${kaptcha.version}</version>
+        </dependency>
 
     </dependencies>
     <build>

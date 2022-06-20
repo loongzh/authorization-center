@@ -1,0 +1,168 @@
+{
+  "groups": [
+    {
+      "name": "spring.security.oauth2.authserver",
+      "type": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps"
+    }
+  ],
+  "properties": [
+    {
+      "name": "spring.security.oauth2.authserver.authorization-endpoint",
+      "type": "java.lang.String",
+      "description": "OAuth2认证接口URI",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/oauth2\/authorize"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.auto-config-login-page",
+      "type": "java.lang.Boolean",
+      "description": "是否自定配置登录页面路由（loginPageUrl -> loginPageView）<br\/> 注：如配置为false，则需要手动编程映射登录页，如通过Controller实现，且登录页面采用form表单形式，form.action需要与loginProcessingUrl配置一致",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.security.oauth2.authserver.consent-page-url",
+      "type": "java.lang.String",
+      "description": "OAuth2 Consent确认授权页面URL（对应GET请求）",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/oauth2\/consent"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.enable-oidc-slo",
+      "type": "java.lang.Boolean",
+      "description": "是否开启OIDC单点登出（即开启OP端end_session_endpoint及RP端frontchannel\/backchannel_logout_uri）",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.security.oauth2.authserver.end-session-endpoint",
+      "type": "java.lang.String",
+      "description": "OIDC 认证服务统一登出end_session_endpoint对应的URI",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/logout"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.issuer",
+      "type": "java.lang.String",
+      "description": "OAuth2 issuer - 发布者（对应认证服务器URI）",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.jwk-set-endpoint",
+      "type": "java.lang.String",
+      "description": "OAuth2 Json Web Key公钥获取接口URI",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/oauth2\/jwks"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.login-page-url",
+      "type": "java.lang.String",
+      "description": "认证服务登录页面URL（对应GET请求）",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/login"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.login-page-view",
+      "type": "java.lang.String",
+      "description": "认证服务登录页面View",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "login"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.login-processing-url",
+      "type": "java.lang.String",
+      "description": "登录表单action（对应POST请求）",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/login"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.logout-page-url",
+      "type": "java.lang.String",
+      "description": "认证服务登出确认页面URL（对应GET请求）",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/logout"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.logout-page-view",
+      "type": "java.lang.String",
+      "description": "认证服务登出确认页面View",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "logout"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.logout-redirect-default-url",
+      "type": "java.lang.String",
+      "description": "认证服务登出后默认跳转页面URL",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/logout_status"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.logout-redirect-default-view",
+      "type": "java.lang.String",
+      "description": "认证服务登出后默认跳转页面View",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "logout_status"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.oidc-user-info-endpoint",
+      "type": "java.lang.String",
+      "description": "OIDC 获取用户信息接口URI",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/userinfo"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.password-encoder",
+      "type": "java.lang.String",
+      "description": "认证服务用户密码编码器（支持bcrypt, pbkdf2, scrypt, argon2）",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "bcrypt"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.rsa-private-key",
+      "type": "org.springframework.core.io.Resource",
+      "description": "认证服务JWT加密RSA公钥",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.rsa-public-key",
+      "type": "org.springframework.core.io.Resource",
+      "description": "认证服务JWT解密RSA公钥",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.static-resource-white-list",
+      "type": "java.lang.String[]",
+      "description": "静态资源 - 白名单（无需认证可直接访问）",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": [
+        "\/css\/**",
+        "\/js\/**",
+        "\/webjars\/**",
+        "\/img\/**"
+      ]
+    },
+    {
+      "name": "spring.security.oauth2.authserver.token-endpoint",
+      "type": "java.lang.String",
+      "description": "OAuth2 令牌接口URI",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/oauth2\/token"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.token-introspection-endpoint",
+      "type": "java.lang.String",
+      "description": "OAuth2 检查令牌接口URI",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/oauth2\/introspect"
+    },
+    {
+      "name": "spring.security.oauth2.authserver.token-revocation-endpoint",
+      "type": "java.lang.String",
+      "description": "OAuth2 吊销令牌接口URI",
+      "sourceType": "com.luo.demo.security.authserver.config.Oauth2ServerProps",
+      "defaultValue": "\/oauth2\/revoke"
+    }
+  ],
+  "hints": []
+}

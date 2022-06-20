@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>统一登出</title>
+</head>
+<body>
+<div class="container">
+    <form id="logoutForm" name="logoutForm" class="form-signin" method="post" th:action="@{/logout}">
+        <input type="hidden" id="id_token_hint" name="id_token_hint" class="form-control" th:value="${param.id_token_hint}">
+        <input type="hidden" id="post_logout_redirect_uri" name="post_logout_redirect_uri" class="form-control" th:value="${param.post_logout_redirect_uri}">
+    </form>
+</div>
+<script type="text/javascript">
+    setTimeout("logoutForm.submit();", 0);
+</script>
+</body>
+</html>

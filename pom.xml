@@ -9,7 +9,8 @@
 		<module>fan-resource</module>
 		<module>fan-user</module>
 		<module>fan-client</module>
-	</modules>
+        <module>fan-common</module>
+    </modules>
 	<groupId>io.githubs.loongzh</groupId>
 	<artifactId>authorization-center</artifactId>
 	<version>0.0.1_u1</version>

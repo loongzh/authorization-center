@@ -18,4 +18,4 @@ security:
       client-id: javaboy
       user-authorization-uri: http://localhost:10301/oauth/authorize
       access-token-uri: http://localhost:10301/oauth/token
-      user-info-uri: http://localhost:10301/user
+      user-info-uri: http://localhost:10301/userinfo

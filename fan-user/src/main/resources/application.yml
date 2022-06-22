@@ -1,0 +1,10 @@
+server:
+  port: 10500
+spring:
+  profiles:
+    active: dev
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

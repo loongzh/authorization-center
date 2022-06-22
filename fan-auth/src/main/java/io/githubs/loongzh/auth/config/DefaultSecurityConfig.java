@@ -15,6 +15,9 @@
  */
 package io.githubs.loongzh.auth.config;
 
+import io.githubs.loongzh.auth.config.handler.oidc.OidcEndSessionSingleLogoutSuccessHandler;
+import io.githubs.loongzh.auth.service.OidcAuthorizationService;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -24,6 +27,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -31,20 +35,43 @@ import org.springframework.security.web.SecurityFilterChain;
 /**
  * @author felord.cn
  */
+@EnableConfigurationProperties(Oauth2ServerProps.class)
 @EnableWebSecurity
 public class DefaultSecurityConfig  {
+    /**
+     * OAuth2认证服务器端配置属性
+     */
+    private Oauth2ServerProps oauth2ServerProps;
+    /**
+     * Client注册信息DAO
+     */
+    private RegisteredClientRepository registeredClientRepository;
+    /**
+     * 认证信息DAO
+     */
+    private OidcAuthorizationService oidcAuthorizationService;
+
+    public DefaultSecurityConfig(Oauth2ServerProps oauth2ServerProps, RegisteredClientRepository registeredClientRepository, OidcAuthorizationService oidcAuthorizationService) {
+        this.oauth2ServerProps = oauth2ServerProps;
+        this.registeredClientRepository = registeredClientRepository;
+        this.oidcAuthorizationService = oidcAuthorizationService;
+    }
     @Bean
     SecurityFilterChain configureSecurityFilterChain(HttpSecurity http) throws Exception {
         http.formLogin(form ->
-                        form.loginPage("/login")
-                                .loginProcessingUrl("/login")
+                        form.loginPage(this.oauth2ServerProps.getLoginPageUrl())
+                                .loginProcessingUrl(this.oauth2ServerProps.getLoginPageUrl())
+                )
+                //登出配置
+                .logout(logout -> logout
+                        .logoutUrl(this.oauth2ServerProps.getLogoutPageUrl())
+                        //登出成功处理器 - 支持OIDC SLO
+                        .logoutSuccessHandler(new OidcEndSessionSingleLogoutSuccessHandler(registeredClientRepository, oidcAuthorizationService, this.oauth2ServerProps))
                 )
                 .authorizeRequests(requests ->
-                        requests.antMatchers("/login").permitAll()
-                                .antMatchers("/oauth2/user").hasAnyAuthority("SCOPE_userinfo")
-                                .antMatchers("/resource/hello").hasAnyAuthority("SCOPE_userinfo")
+                        requests.antMatchers(this.oauth2ServerProps.getLoginPageUrl()).permitAll()
                                 .anyRequest().authenticated()
-                );
+                ).oauth2ResourceServer().jwt();
     return http.build();
     }
     /**
@@ -75,7 +102,6 @@ public class DefaultSecurityConfig  {
     WebSecurityCustomizer webSecurityCustomizer() {
         return web -> web.ignoring()
                 .antMatchers("/actuator/health")
-                .antMatchers("/rsa/publicKey")
                 .antMatchers("/css/**")
                 .antMatchers("/js/**")
                 .antMatchers("/images/**");

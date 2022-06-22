@@ -7,11 +7,14 @@ import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue;
 import io.githubs.loongzh.auth.config.handler.oidc.DefaultOidcTokenCustomer;
 import io.githubs.loongzh.auth.config.handler.oidc.DefaultOidcUserInfoMapper;
+import io.githubs.loongzh.auth.config.handler.oidc.OidcCustomProviderConfigurationEndpointFilter;
 import io.githubs.loongzh.auth.constant.Oauth2Constants;
+import io.githubs.loongzh.auth.service.JdbcOidcAuthorizationService;
+import io.githubs.loongzh.auth.service.OidcAuthorizationService;
 import io.githubs.loongzh.auth.utils.KeyConfig;
 import io.githubs.loongzh.auth.utils.ObjectPostProcessorUtils;
 import lombok.SneakyThrows;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -31,10 +34,8 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationConsentService;
-import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
-import org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider;
 import org.springframework.security.oauth2.server.authorization.authentication.JwtClientAssertionAuthenticationProvider;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeAuthenticationProvider;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
@@ -63,14 +64,14 @@ import java.util.UUID;
 /**
  * The type Authorization server configuration.
  */
+@EnableConfigurationProperties(Oauth2ServerProps.class)
 @Configuration(proxyBeanMethods = false)
 public class AuthorizationServerConfiguration {
-    @Value("${server.port}") Integer port;
-    private static final String CUSTOM_CONSENT_PAGE_URI = "/oauth2/consent";
     private DefaultOidcUserInfoMapper.OidcUserInfoMapperExtend oidcUserInfoMapperExtend;
     private DefaultOidcTokenCustomer.AbstractOidcTokenCustomerExtend oidcTokenCustomerExtend;
-
-    public AuthorizationServerConfiguration(DefaultOidcUserInfoMapper.OidcUserInfoMapperExtend oidcUserInfoMapperExtend, DefaultOidcTokenCustomer.AbstractOidcTokenCustomerExtend oidcTokenCustomerExtend) {
+    private Oauth2ServerProps oauth2ServerProps;
+    public AuthorizationServerConfiguration(Oauth2ServerProps oauth2ServerProps,DefaultOidcUserInfoMapper.OidcUserInfoMapperExtend oidcUserInfoMapperExtend, DefaultOidcTokenCustomer.AbstractOidcTokenCustomerExtend oidcTokenCustomerExtend) {
+        this.oauth2ServerProps=oauth2ServerProps;
         this.oidcUserInfoMapperExtend = oidcUserInfoMapperExtend;
         this.oidcTokenCustomerExtend = oidcTokenCustomerExtend;
     }
@@ -84,7 +85,7 @@ public class AuthorizationServerConfiguration {
         //设置确认界面uri
         authorizationServerConfigurer
                 .authorizationEndpoint(authorizationEndpoint ->
-                        authorizationEndpoint.consentPage(CUSTOM_CONSENT_PAGE_URI));
+                        authorizationEndpoint.consentPage(this.oauth2ServerProps.getConsentPageUrl()));
         //OIDC相关设置
         authorizationServerConfigurer
         .oidc(oidc ->
@@ -94,6 +95,11 @@ public class AuthorizationServerConfiguration {
 
                 )
         )
+        //替换OidcProviderConfigurationEndpointFilter默认实现为OidcOpConfigurationEndpointFilter
+        .withObjectPostProcessor(ObjectPostProcessorUtils.objectPostReturnNewObj(
+                OncePerRequestFilter.class,
+                OidcProviderConfigurationEndpointFilter.class,
+                new OidcCustomProviderConfigurationEndpointFilter(this.providerSettings())))
         //扩展Oauth2 client认证 参数转换器 - 支持RefreshToken无需client_secret认证
         .withObjectPostProcessor(ObjectPostProcessorUtils.objectPostAppendHandle(
         OncePerRequestFilter.class,
@@ -234,12 +240,16 @@ public class AuthorizationServerConfiguration {
      * @param registeredClientRepository the registered client repository
      * @return the o auth 2 authorization service
      */
+//    @Bean
+//    public OAuth2AuthorizationService authorizationService(
+//            JdbcTemplate jdbcTemplate,
+//            RegisteredClientRepository registeredClientRepository) {
+//        return new JdbcOAuth2AuthorizationService(jdbcTemplate,
+//                registeredClientRepository);
+//    }
     @Bean
-    public OAuth2AuthorizationService authorizationService(
-            JdbcTemplate jdbcTemplate,
-            RegisteredClientRepository registeredClientRepository) {
-        return new JdbcOAuth2AuthorizationService(jdbcTemplate,
-                registeredClientRepository);
+    public OidcAuthorizationService authorizationService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
+        return new JdbcOidcAuthorizationService(jdbcTemplate, registeredClientRepository);
     }
 
     /**
@@ -296,6 +306,14 @@ public class AuthorizationServerConfiguration {
     @Bean
     public ProviderSettings providerSettings() {
         //TODO 生产应该使用域名
-        return ProviderSettings.builder().issuer("http://localhost:" + port).build();
+        return ProviderSettings.builder().issuer(this.oauth2ServerProps.getIssuer())
+                .setting(Oauth2Constants.PROVIDER_SETTINGS.END_SESSION_ENDPOINT, this.oauth2ServerProps.getEndSessionEndpoint())
+                .authorizationEndpoint(this.oauth2ServerProps.getAuthorizationEndpoint())
+                .tokenEndpoint(this.oauth2ServerProps.getTokenEndpoint())
+                .jwkSetEndpoint(this.oauth2ServerProps.getJwkSetEndpoint())
+                .oidcUserInfoEndpoint(this.oauth2ServerProps.getOidcUserInfoEndpoint())
+                .tokenIntrospectionEndpoint(this.oauth2ServerProps.getTokenIntrospectionEndpoint())
+                .tokenRevocationEndpoint(this.oauth2ServerProps.getTokenRevocationEndpoint())
+                .build();
     }
 }

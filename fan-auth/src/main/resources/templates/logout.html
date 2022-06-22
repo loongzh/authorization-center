@@ -12,10 +12,16 @@
     <form id="logoutForm" name="logoutForm" class="form-signin" method="post" th:action="@{/logout}">
         <input type="hidden" id="id_token_hint" name="id_token_hint" class="form-control" th:value="${param.id_token_hint}">
         <input type="hidden" id="post_logout_redirect_uri" name="post_logout_redirect_uri" class="form-control" th:value="${param.post_logout_redirect_uri}">
+        <div class="button login">
+            <button type="submit">
+                <span>登录</span>
+                <i class="fa fa-check"></i>
+            </button>
+        </div>
     </form>
 </div>
-<script type="text/javascript">
-    setTimeout("logoutForm.submit();", 0);
-</script>
+<!--<script type="text/javascript">-->
+<!--    setTimeout("logoutForm.submit();", 0);-->
+<!--</script>-->
 </body>
 </html>

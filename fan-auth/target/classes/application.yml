@@ -12,6 +12,11 @@ spring:
     url: jdbc:mysql://localhost:3306/fan_oauth_temp
     username: root
     password: 123qwe...
+  security:
+    oauth2:
+      # OAuth2 Authorization Server配置
+      authserver:
+        issuer: http://localhost:${server.port}
 management:
   endpoints:
     web:

@@ -48,6 +48,18 @@ public class Oauth2Controller {
     public ModelAndView login() {
         return new ModelAndView("login");
     }
+    //通过Token退出
+    @GetMapping("logout-web")
+    public ModelAndView logoutWeb() {
+        //根据Token_Value获取Session和UserAccount，删除相关记录。
+        return new ModelAndView("logout");
+    }
+    //通过Session退出
+    @GetMapping("logout-spa")
+    public ModelAndView logoutSpa() {
+        //根据Token_Value获取Session和UserAccount，删除相关记录。
+        return new ModelAndView("logout");
+    }
 //    @RequestMapping("/oauth2/consent")
 //    public ModelAndView consent(@RequestParam String scope, @RequestParam String client_id, @RequestParam String state, Authentication authentication, Model model) {
 //        model.addAttribute("scopes", scope.split(" "));

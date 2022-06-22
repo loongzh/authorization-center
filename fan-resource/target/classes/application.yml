@@ -1,6 +1,8 @@
 server:
   port: 10501
 spring:
+  main:
+    allow-circular-references: true
   profiles:
     active: dev
 management:

@@ -1,8 +1,18 @@
 server:
   port: 10501
 spring:
+  main:
+    allow-circular-references: true
   profiles:
     active: dev
+
+reactive:
+  feign:
+    loadbalancer:
+      enabled: true
+    circuit:
+      breaker:
+        enabled: false
 management:
   endpoints:
     web:

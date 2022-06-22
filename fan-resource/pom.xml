@@ -15,12 +15,19 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <feign-reactor.version>3.2.3</feign-reactor.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
+      <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.playtika.reactivefeign</groupId>
+      <artifactId>feign-reactor-spring-cloud-starter</artifactId>
+      <version>${feign-reactor.version}</version>
+      <type>pom</type>
     </dependency>
   </dependencies>
   <build>
@@ -37,7 +44,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
-          <mainClass>com.xw.iot.rule.IotRuleApplication</mainClass>
+          <mainClass>io.githubs.loongzh.FanResourceApplication</mainClass>
           <includeSystemScope>true</includeSystemScope>
           <fork>true</fork>
         </configuration>
